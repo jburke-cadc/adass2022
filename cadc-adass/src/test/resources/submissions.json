@@ -1,0 +1,116 @@
+{
+  "count": 3,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "code": "ABCD99",
+      "speakers": [
+        {
+          "code": "GMYGLN",
+          "name": "Peter Parker",
+          "biography": null,
+          "avatar": null,
+          "email": "spidey@avengers.org"
+        }
+      ],
+      "title": "ABCD99 title",
+      "submission_type": {
+        "en": "Contributed talk"
+      },
+      "track": null,
+      "state": "accepted",
+      "abstract": "an abstract",
+      "description": null,
+      "duration": 15,
+      "slot_count": 1,
+      "do_not_record": false,
+      "is_featured": false,
+      "content_locale": "en",
+      "slot": null,
+      "image": null,
+      "resources": [],
+      "created": "2022-07-27T14:08:17.948102+00:00",
+      "pending_state": null,
+      "answers": [],
+      "notes": null,
+      "internal_notes": null,
+      "tags": []
+    },
+    {
+      "code": "R7JNSY",
+      "speakers": [
+        {
+          "code": "CQWEAT",
+          "name": "J. Jonah Jameson",
+          "biography": null,
+          "avatar": null,
+          "email": "jjj@dailybugle.com"
+        }
+      ],
+      "title": "R7JNSY title",
+      "submission_type": {
+        "en": "Contributed talk"
+      },
+      "track": null,
+      "state": "submitted",
+      "abstract": "another abstract",
+      "description": null,
+      "duration": 15,
+      "slot_count": 1,
+      "do_not_record": false,
+      "is_featured": false,
+      "content_locale": "en",
+      "slot": null,
+      "image": null,
+      "resources": [],
+      "created": "2022-07-27T19:31:20.134559+00:00",
+      "pending_state": null,
+      "answers": [],
+      "notes": null,
+      "internal_notes": null,
+      "tags": []
+    },
+    {
+      "code": "MK3MHL",
+      "speakers": [
+        {
+          "code": "KDLUKX",
+          "name": "Green Goblin",
+          "biography": null,
+          "avatar": null,
+          "email": "green.guy@villians.net"
+        },
+        {
+          "code": "WBTSTY",
+          "name": "Doctor Octopus",
+          "biography": null,
+          "avatar": null,
+          "email": "dococt88@gmail.com"
+        }
+      ],
+      "title": "MK3MHL title",
+      "submission_type": {
+        "en": "Poster"
+      },
+      "track": null,
+      "state": "submitted",
+      "abstract": "some abstract",
+      "description": null,
+      "duration": 1,
+      "slot_count": 1,
+      "do_not_record": false,
+      "is_featured": false,
+      "content_locale": "en",
+      "slot": null,
+      "image": null,
+      "resources": [],
+      "created": "2022-07-27T19:34:26.759954+00:00",
+      "pending_state": null,
+      "answers": [],
+      "notes": null,
+      "internal_notes": null,
+      "tags": []
+    }
+  ]
+}
