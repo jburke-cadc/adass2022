@@ -2,7 +2,6 @@ plugins {
     id 'java'
     id 'maven'
     id 'application'
-    id 'checkstyle'
 }
 
 repositories {
@@ -10,16 +9,11 @@ repositories {
     mavenLocal()
 }
 
-apply from: '../opencadc.gradle'
-
 sourceCompatibility = 1.8
 
 group = 'org.opencadc'
 
 mainClassName = 'ca.nrc.cadc.ac.adass.Main'
-
-description = 'OpenCADC ??? application'
-def git_url = 'https://github.com/opencadc/ac'
 
 dependencies {
     compile 'com.unboundid:unboundid-ldapsdk:[2.3,3.0)'
@@ -33,6 +27,5 @@ dependencies {
 
     testCompile 'junit:junit:[4.12,5.0)'
 
-    runtimeOnly 'org.postgresql:postgresql:[42.2.8,)'
     runtimeOnly 'org.postgresql:postgresql:[42.2.8,)'
 }

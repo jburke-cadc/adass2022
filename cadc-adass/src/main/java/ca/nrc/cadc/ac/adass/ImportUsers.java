@@ -92,11 +92,15 @@ import ca.nrc.cadc.vos.VOSURI;
 import ca.nrc.cadc.vos.client.VOSpaceClient;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.PrivilegedAction;
 import java.security.SecureRandom;
 import java.sql.Connection;
@@ -113,13 +117,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.security.auth.Subject;
 import javax.security.auth.x500.X500Principal;
-import org.apache.log4j.Logger;
 import org.opencadc.gms.GroupURI;
 
 public class ImportUsers extends AbstractCommand {
 
-    public static final String PRETALX_API_URL = "pretalx.apiUrl";
-    public static final String PRETALX_TOKEN = "pretalx.token";
+    //public static final String PRETALX_API_URL = "pretalx.apiUrl";
+    //public static final String PRETALX_TOKEN = "pretalx.token";
+    public static final String PRETALX_FILE = "pretalx.file";
     public static final String  CADC_CERT_GEN_EXEC = "cadc-cert-gen.exec";
     public static final String CADC_CERT_GEN_CALLING_CERT = "cadc-cert-gen.callingCert";
     public static final String  CADC_CERT_GEN_SIGNING_CERT = "cadc-cert-gen.signingCert";
@@ -135,7 +139,7 @@ public class ImportUsers extends AbstractCommand {
     public static final String VAULT_USER_FOLDER_PREFIX = "vault.userFolderPrefix";
 
     public static final List<String> IMPORT_PROPS =
-        Stream.of(PRETALX_API_URL, PRETALX_TOKEN, CADC_CERT_GEN_EXEC, CADC_CERT_GEN_CALLING_CERT,
+        Stream.of(PRETALX_FILE, CADC_CERT_GEN_EXEC, CADC_CERT_GEN_CALLING_CERT,
                   CADC_CERT_GEN_SIGNING_CERT, CADC_CERT_GEN_RESOURCE_ID, CADC_CERT_GEN_SERVER,
                   CADC_CERT_GEN_DATABASE, VAULT_RESOURCE_ID, VAULT_ADMIN_USER, VAULT_ADMIN_USER_CERT,
                   VAULT_ADASS_URI, VAULT_ADASS_URL, VAULT_USER_FOLDER_PREFIX)
@@ -152,7 +156,8 @@ public class ImportUsers extends AbstractCommand {
     private final String propertiesFile;
     private final String logFile;
     private final boolean dryRun;
-    private URL apiURL;
+    //private URL apiURL;
+    private Path pretalxPath;
     private HttpPrincipal callerHttpPrincipal;
     private Subject adminUserSubject;
     private Group adassAdminGroup;
@@ -191,7 +196,7 @@ public class ImportUsers extends AbstractCommand {
         // Get the list of User's.
         Submissions submissions = getSubmissions();
         this.total = submissions.results.size();
-        logMessage(String.format("users to import - %s", total));
+        logMessage(String.format("proposals to import - %s", total));
 
         // distinct list of proposal codes to eliminate duplicates
         Set<String> proposals = new TreeSet<>();
@@ -201,7 +206,7 @@ public class ImportUsers extends AbstractCommand {
         Speaker speaker;
         for (Result result : results) {
             Proposal proposal = new Proposal(result);
-            logMessage(String.format("proposal: %s", proposal.code));
+            logMessage(String.format("%s - process proposal", proposal.code));
 
             if (proposal.type.equals("Poster block") ||
                 proposal.type.equals("Goodbye") ||
@@ -235,20 +240,21 @@ public class ImportUsers extends AbstractCommand {
 
                 // Create DN by calling cadc-cert-gen
                 String dn = getDistinguishedName(proposal.code);
-                logMessage(String.format("dn: %s", dn));
+                logMessage(String.format("%s - dn: %s", proposal.code, dn));
 
                 // Create and approve UserRequest
                 proposal.username = createUsername(proposal);
                 proposal.password = createPassword();
-                logMessage(String.format("pw: %s", proposal.password));
                 User user = createUser(proposal, dn);
+                logMessage(String.format("%s - created user %s:%s",
+                                         proposal.code, proposal.username, proposal.password));
 
                 // Create user group for vault permissions
-                Group adassUserGroup = getAdassUserGroup(user);
+                Group adassUserGroup = createAdassUserGroup(user);
 
                 // Create vault folder
                 proposal.folderUrl = createVaultFolder(user, adassUserGroup);
-                logMessage(String.format("folder URL: %s", proposal.folderUrl));
+                logMessage(String.format("%s - vault folder URL: %s", proposal.code, proposal.folderUrl));
 
                 // write proposal to the DB
                 saveProposal(proposal);
@@ -258,10 +264,12 @@ public class ImportUsers extends AbstractCommand {
                 logMessage(String.format("%s - error importing proposal: %s",
                                          proposal.code, e.getMessage()));
                 this.error++;
+                throw new RuntimeException(e);
             } catch (SQLException e) {
                 logMessage(String.format("%s - database error: %s",
                                          proposal.code, e.getMessage()));
                 this.error++;
+                throw new RuntimeException(e);
             }
         }
 
@@ -285,12 +293,18 @@ public class ImportUsers extends AbstractCommand {
         this.logWriter = AdminUtil.initWriter(logFile);
 
         this.importProps = AdminUtil.getProperties(propertiesFile, IMPORT_PROPS);
-        String apiUrl = importProps.getString(PRETALX_API_URL);
-        try {
-            this.apiURL = new URL(apiUrl);
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException(String.format("config property %s is not a valid URL: %s",
-                                                             PRETALX_API_URL, apiUrl));
+        //String apiUrl = importProps.getString(PRETALX_API_URL);
+        //try {
+        //    this.apiURL = new URL(apiUrl);
+        //} catch (MalformedURLException e) {
+        //    throw new IllegalArgumentException(String.format("config property %s is not a valid URL: %s",
+        //                                                     PRETALX_API_URL, apiUrl));
+        //}
+
+        String pretalxFilename = importProps.getString(PRETALX_FILE);
+        this.pretalxPath = Paths.get(pretalxFilename);
+        if (!Files.exists(this.pretalxPath)) {
+            throw new RuntimeException(String.format("%s - file not found or unable to read", pretalxFilename));
         }
 
         String exec = importProps.getString(CADC_CERT_GEN_EXEC);
@@ -359,23 +373,28 @@ public class ImportUsers extends AbstractCommand {
     }
 
     protected Submissions getSubmissions() {
-        logMessage(String.format("pretalx url: %s", this.apiURL));
-        HttpGet get = new HttpGet(this.apiURL, true);
-        String token = importProps.getString(PRETALX_TOKEN);
-        get.setRequestProperty("Authorization", token);
-        try {
-            get.prepare();
-        } catch (ResourceNotFoundException e) {
-            throw new RuntimeException(String.format("API endpoint %s not found because %s",
-                                                     apiURL, e.getMessage()));
-        } catch (ResourceAlreadyExistsException | IOException | InterruptedException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+        //logMessage(String.format("pretalx query url: %s", this.apiURL));
+        //HttpGet get = new HttpGet(this.apiURL, true);
+        //String token = importProps.getString(PRETALX_TOKEN);
+        //get.setRequestProperty("Authorization", "Token " + token);
+        //try {
+        //    get.prepare();
+        //} catch (ResourceNotFoundException e) {
+        //    throw new RuntimeException(String.format("API endpoint %s not found because %s",
+        //                                             apiURL, e.getMessage()));
+        //} catch (ResourceAlreadyExistsException | IOException | InterruptedException e) {
+        //    throw new RuntimeException(e.getMessage());
+        //}
+        //if (get.getResponseCode() != 200) {
+        //    throw new RuntimeException(String.format("Pretalx submission downloaded failed with response code: %s",
+        //                                             get.getResponseCode()));
+        //}
 
         Submissions submissions;
         SubmissionsParser parser = new SubmissionsParser();
         try {
-            submissions = parser.parseSubmissions(get.getInputStream());
+            //submissions = parser.parseSubmissions(get.getInputStream());
+            submissions = parser.parseSubmissions(Files.newInputStream(pretalxPath));
         } catch (IOException e) {
             throw new RuntimeException(String.format("Error downloading submissions: %s", e.getMessage()));
         }
@@ -409,7 +428,6 @@ public class ImportUsers extends AbstractCommand {
         }
         String sql = "select username from cadcmisc.adass2022 where username like '"
             + prefix + "%' order by username desc";
-        logMessage("sql: " + sql);
         try (Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery(sql);
             int nextNum = 1;
@@ -419,7 +437,6 @@ public class ImportUsers extends AbstractCommand {
                 nextNum++;
             }
             String ret = String.format("%s%02d", prefix, nextNum);
-            logMessage("username: " + ret);
             return ret;
         }
     }
@@ -502,7 +519,7 @@ public class ImportUsers extends AbstractCommand {
         return userRequest;
     }
 
-    protected Group getAdassUserGroup(User user) {
+    protected Group createAdassUserGroup(User user) {
         if (this.dryRun) {
             return new Group(new GroupURI(URI.create("ivo://adass/group?name")));
         }
@@ -578,6 +595,11 @@ public class ImportUsers extends AbstractCommand {
 
     protected void saveProposal(Proposal proposal)
         throws SQLException {
+        if (this.dryRun) {
+            logMessage(String.format("%s - persisting proposal", proposal.code));
+            return;
+        }
+
         String sql = "INSERT INTO cadcmisc.adass2022 "
             + "(code,type,state,title,abstract,speaker_code,speaker_name,"
             + "speaker_email,username,password,folderUrl) "
