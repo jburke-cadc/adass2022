@@ -3,7 +3,7 @@
  *******************  CANADIAN ASTRONOMY DATA CENTRE  *******************
  **************  CENTRE CANADIEN DE DONNÉES ASTRONOMIQUES  **************
  *
- *  (c) 2022.                            (c) 20202
+ *  (c) 2022.                            (c) 2022.
  *  Government of Canada                 Gouvernement du Canada
  *  National Research Council            Conseil national de recherches
  *  Ottawa, Canada, K1A 0R6              Ottawa, Canada, K1A 0R6
@@ -69,70 +69,25 @@
 
 package ca.nrc.cadc.ac.adass;
 
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-import org.junit.Assert;
-import org.junit.Test;
+public enum SubmissionType {
+    BOF("Birds of a Feather"),
+    CONTRIBUTED_TALK("Contributed talk"),
+    INVITED_TALK("Invited Talk"),
+    POSTER("Poster"),
+    TUTORIAL("Tutorial"),
+    FOCUS_DEMO("Focus Demo"),
+    POSTER_BLOCK("Poster block"),
+    GOODBYE("Goodbye"),
+    WELCOME("Welcome");
 
-public class SubmissionParserTest {
+    private final String value;
 
-    @Test
-    public void testParseSubmissions() throws Exception {
-        InputStream is = Files.newInputStream(Paths.get("src/test/resources/submissions.json"));
-        SubmissionsParser parser = new SubmissionsParser();
-        Submissions submissions = parser.parseSubmissions(is);
+    SubmissionType(String value) {
+        this.value = value;
+    }
 
-        Assert.assertNotNull(submissions);
-        Assert.assertEquals(3, submissions.count);
-        Assert.assertNotNull(submissions.results);
-
-        List<Result> results = submissions.results;
-        Assert.assertEquals(3, results.size());
-
-        Result result = results.get(0);
-        Assert.assertEquals("ABCD99", result.code);
-        Assert.assertEquals("ABCD99 title", result.title);
-        Assert.assertEquals("accepted", result.state);
-        Assert.assertEquals(SubmissionType.CONTRIBUTED_TALK.getValue(), result.type);
-        Assert.assertNotNull(result.speakers);
-        List<Speaker> speakers = result.speakers;
-        Assert.assertEquals(1, speakers.size());
-        Speaker speaker = speakers.get(0);
-        Assert.assertEquals("GMYGLN", speaker.code);
-        Assert.assertEquals("Peter Parker", speaker.name);
-        Assert.assertEquals("spidey@avengers.org", speaker.email);
-
-        result = results.get(1);
-        Assert.assertEquals("R7JNSY", result.code);
-        Assert.assertEquals("R7JNSY title", result.title);
-        Assert.assertEquals("submitted", result.state);
-        Assert.assertEquals(SubmissionType.BOF.getValue(), result.type);
-        Assert.assertNotNull(result.speakers);
-        speakers = result.speakers;
-        Assert.assertEquals(1, speakers.size());
-        speaker = speakers.get(0);
-        Assert.assertEquals("CQWEAT", speaker.code);
-        Assert.assertEquals("J. Jonah Jameson", speaker.name);
-        Assert.assertEquals("jjj@dailybugle.com", speaker.email);
-
-        result = results.get(2);
-        Assert.assertEquals("MK3MHL", result.code);
-        Assert.assertEquals("MK3MHL title", result.title);
-        Assert.assertEquals("submitted", result.state);
-        Assert.assertEquals(SubmissionType.POSTER.getValue(), result.type);
-        Assert.assertNotNull(result.speakers);
-        speakers = result.speakers;
-        Assert.assertEquals(2, speakers.size());
-        speaker = speakers.get(0);
-        Assert.assertEquals("KDLUKX", speaker.code);
-        Assert.assertEquals("Green Goblin", speaker.name);
-        Assert.assertEquals("green.guy@villians.net", speaker.email);
-        speaker = speakers.get(1);
-        Assert.assertEquals("WBTSTY", speaker.code);
-        Assert.assertEquals("Doctor Octopus", speaker.name);
-        Assert.assertEquals("dococt88@gmail.com", speaker.email);
+    public String getValue() {
+        return this.value;
     }
 
 }

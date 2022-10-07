@@ -74,7 +74,7 @@ public class Proposal {
     // from json
     public String code;
     public String state;
-    public String type;
+    public SubmissionType type;
     public String title;
     public String summary; // abstract in json
     public Speaker speaker;
@@ -88,7 +88,7 @@ public class Proposal {
                     String username, String password, String folderUrl, Speaker speaker) {
         this.code = code;
         this.state = state;
-        this.type = type;
+        this.type = SubmissionType.valueOf(type);
         this.title = title;
         this.summary = summary;
         this.username = username;
@@ -100,16 +100,10 @@ public class Proposal {
     public Proposal(Result result) {
         this.code = result.code;
         this.state = result.state;
-        this.type = result.type;
+        this.type = SubmissionType.valueOf(result.type);
         this.title = result.title;
         this.summary = result.summary;
         this.speaker = result.speakers.get(0);
     }
-
-    //@Override
-    //public String toString() {
-    //    return String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s",
-    //                         code, title, state, password, folderUrl, speaker.code, speaker.name, speaker.email);
-    //}
 
 }

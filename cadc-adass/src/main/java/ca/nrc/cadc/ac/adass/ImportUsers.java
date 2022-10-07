@@ -208,11 +208,11 @@ public class ImportUsers extends AbstractCommand {
             Proposal proposal = new Proposal(result);
             logMessage(String.format("%s - process proposal", proposal.code));
 
-            if (proposal.type.equals("Poster block") ||
-                proposal.type.equals("Goodbye") ||
-                proposal.type.equals("Welcome")) {
+            if (proposal.type == SubmissionType.POSTER_BLOCK ||
+                proposal.type == SubmissionType.GOODBYE ||
+                proposal.type == SubmissionType.WELCOME) {
                 logMessage(String.format("%s - skipping submissionType: %s",
-                                         proposal.code, proposal.type));
+                                         proposal.code, proposal.type.getValue()));
                 skipped++;
                 continue;
             }
@@ -253,7 +253,7 @@ public class ImportUsers extends AbstractCommand {
                 Group adassUserGroup = createAdassUserGroup(user);
 
                 // Create vault folder
-                proposal.folderUrl = createVaultFolder(user, adassUserGroup);
+                proposal.folderUrl = createVaultFolder(user, adassUserGroup, proposal.type);
                 logMessage(String.format("%s - vault folder URL: %s", proposal.code, proposal.folderUrl));
 
                 // write proposal to the DB
@@ -424,7 +424,7 @@ public class ImportUsers extends AbstractCommand {
         String prefix = getTypePrefix(proposal.type);
         if (prefix == null) {
             throw new IllegalStateException(String.format("%s - unknown submissionType: %s",
-                                                          proposal.code, proposal.type));
+                                                          proposal.code, proposal.type.getValue()));
         }
         String sql = "select username from cadcmisc.adass2022 where username like '"
             + prefix + "%' order by username desc";
@@ -543,7 +543,7 @@ public class ImportUsers extends AbstractCommand {
         return vaultGroup;
     }
 
-    protected String createVaultFolder(User user, Group adassUserGroup) {
+    protected String createVaultFolder(User user, Group adassUserGroup, SubmissionType type) {
         if (this.dryRun) {
             return "ivo:dryrun";
         }
@@ -557,7 +557,7 @@ public class ImportUsers extends AbstractCommand {
             List<NodeProperty> nodeProperties = new ArrayList<>();
             setPermissions(nodeProperties, adassAdminGroup, adassUserGroup);
 
-            String folderUri = String.format("%s/%s", vaultAdassUri, folderName);
+            String folderUri = String.format("%s/%s/%s", vaultAdassUri, type.name(), folderName);
             VOSURI folderURI;
             try {
                 folderURI = new VOSURI(new URI(folderUri));
@@ -572,7 +572,7 @@ public class ImportUsers extends AbstractCommand {
             } catch (NodeNotFoundException e) {
                 this.voSpaceClient.createNode(newNode);
             }
-            return String.format("%s/%s", vaultAdassUrl, folderName);
+            return String.format("%s/%s/%s", vaultAdassUrl, type.name(), folderName);
         });
         logMessage(String.format("Created vault folder: %s", folderUrl));
         return folderUrl;
@@ -608,7 +608,7 @@ public class ImportUsers extends AbstractCommand {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             connection.setAutoCommit(false);
             statement.setString(1,proposal.code);
-            statement.setString(2,proposal.type);
+            statement.setString(2,proposal.type.getValue());
             statement.setString(3,proposal.state);
             statement.setString(4,proposal.title);
             statement.setString(5,proposal.summary);
@@ -636,25 +636,25 @@ public class ImportUsers extends AbstractCommand {
         }
     }
 
-    protected String getTypePrefix(String type) {
+    protected String getTypePrefix(SubmissionType type) {
         String prefix = null;
         switch(type) {
-            case "Birds of a Feather":
+            case BOF:
                 prefix = "B";
                 break;
-            case "Contributed talk":
+            case CONTRIBUTED_TALK:
                 prefix = "C";
                 break;
-            case "Focus Demo":
+            case FOCUS_DEMO:
                 prefix = "F";
                 break;
-            case "Invited Talk":
+            case INVITED_TALK:
                 prefix = "I";
                 break;
-            case "Poster":
+            case POSTER:
                 prefix = "P";
                 break;
-            case "Tutorial":
+            case TUTORIAL:
                 prefix = "T";
                 break;
         }
