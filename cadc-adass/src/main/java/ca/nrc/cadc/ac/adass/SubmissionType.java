@@ -90,4 +90,13 @@ public enum SubmissionType {
         return this.value;
     }
 
+    public static SubmissionType get(String value) {
+        for (SubmissionType type : SubmissionType.values()) {
+            if (type.value.equalsIgnoreCase(value)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException("Unknown SubmissionType " + value);
+    }
+
 }

@@ -88,7 +88,7 @@ public class Proposal {
                     String username, String password, String folderUrl, Speaker speaker) {
         this.code = code;
         this.state = state;
-        this.type = SubmissionType.valueOf(type);
+        this.type = SubmissionType.get(type);
         this.title = title;
         this.summary = summary;
         this.username = username;
@@ -100,7 +100,7 @@ public class Proposal {
     public Proposal(Result result) {
         this.code = result.code;
         this.state = result.state;
-        this.type = SubmissionType.valueOf(result.type);
+        this.type = SubmissionType.get(result.type);
         this.title = result.title;
         this.summary = result.summary;
         this.speaker = result.speakers.get(0);

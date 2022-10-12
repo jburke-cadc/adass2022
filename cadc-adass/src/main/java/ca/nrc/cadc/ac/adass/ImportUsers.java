@@ -90,6 +90,7 @@ import ca.nrc.cadc.vos.NodeProperty;
 import ca.nrc.cadc.vos.VOS;
 import ca.nrc.cadc.vos.VOSURI;
 import ca.nrc.cadc.vos.client.VOSpaceClient;
+import com.unboundid.ldap.sdk.LDAPException;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -239,21 +240,22 @@ public class ImportUsers extends AbstractCommand {
                 }
 
                 // Create DN by calling cadc-cert-gen
-                String dn = getDistinguishedName(proposal.code);
+                proposal.username = createUsername(proposal);
+                proposal.password = createPassword();
+                String dn = getDistinguishedName(proposal.username);
                 logMessage(String.format("%s - dn: %s", proposal.code, dn));
 
                 // Create and approve UserRequest
-                proposal.username = createUsername(proposal);
-                proposal.password = createPassword();
                 User user = createUser(proposal, dn);
-                logMessage(String.format("%s - created user %s:%s",
+                logMessage(String.format("%s - user %s:%s",
                                          proposal.code, proposal.username, proposal.password));
 
                 // Create user group for vault permissions
                 Group adassUserGroup = createAdassUserGroup(user);
+                logMessage(String.format("%s - user group: %s", proposal.code, adassUserGroup.getID().getURI()));
 
                 // Create vault folder
-                proposal.folderUrl = createVaultFolder(user, adassUserGroup, proposal.type);
+                proposal.folderUrl = createVaultFolder(user, adassUserGroup);
                 logMessage(String.format("%s - vault folder URL: %s", proposal.code, proposal.folderUrl));
 
                 // write proposal to the DB
@@ -459,7 +461,7 @@ public class ImportUsers extends AbstractCommand {
             return new User();
         }
 
-        HttpPrincipal userHttpPrincipal = new HttpPrincipal(proposal.code);
+        HttpPrincipal userHttpPrincipal = new HttpPrincipal(proposal.username);
         Subject userSubject = new Subject();
         userSubject.getPrincipals().add(userHttpPrincipal);
         userSubject.getPublicCredentials().add(AuthMethod.PASSWORD);
@@ -468,7 +470,7 @@ public class ImportUsers extends AbstractCommand {
         User user = Subject.doAs(userSubject, (PrivilegedAction<User>) () -> {
             User existing = null;
              try {
-                 existing = getUserPersistence().getUser(new HttpPrincipal(proposal.code));
+                 existing = getUserPersistence().getUser(userHttpPrincipal);
              } catch (UserNotFoundException e) {
                  // ignore
              }
@@ -484,11 +486,10 @@ public class ImportUsers extends AbstractCommand {
             getUserPersistence().addUserRequest(userRequest, callerHttpPrincipal);
         } catch (UserNotFoundException e) {
             throw new IllegalStateException(String.format("Adding UserRequest, username %s not found: %s",
-                                                          proposal.code, e.getMessage()));
+                                                          proposal.username, e.getMessage()));
         } catch (UserAlreadyExistsException e) {
-            // ignore
+            logMessage(String.format("%s - UserRequest already exists for %s", proposal.code, proposal.username));
         }
-        logMessage("Created UserRequest");
 
         // Approve the UserRequest, done as the user.
         user = Subject.doAs(userSubject, (PrivilegedAction<User>) () -> {
@@ -496,27 +497,23 @@ public class ImportUsers extends AbstractCommand {
                 return getUserPersistence().approveUserRequest(userHttpPrincipal);
             } catch (UserNotFoundException e) {
                 throw new IllegalStateException(String.format("Approving UserRequest, username %s not found: %s",
-                                                              proposal.code, e.getMessage()));
+                                                              proposal.username, e.getMessage()));
             }
         });
-        logMessage("Approved UserRequest");
         return user;
     }
 
     protected UserRequest createUserRequest(Proposal proposal, String distinguishedName) {
         String[] name = proposal.speaker.name.split("\\s+", 2);
-        PersonalDetails personalDetails = new PersonalDetails(name[0], name[1]);
-        personalDetails.email = String.format("%s@adass2022.ca", proposal.code);
-        personalDetails.address = proposal.speaker.email;
+
         User user = new User();
-        user.personalDetails = personalDetails;
-        HttpPrincipal httpPrincipal = new HttpPrincipal(proposal.code);
-        X500Principal x500Principal = new X500Principal(distinguishedName);
-        user.getIdentities().add(httpPrincipal);
-        user.getIdentities().add(x500Principal);
-        UserRequest userRequest = new UserRequest(user, proposal.password.toCharArray());
-        logMessage(String.format("UserRequest: %s", userRequest));
-        return userRequest;
+        user.personalDetails = new PersonalDetails(name[0], name[1]);
+        user.personalDetails.email = String.format("%s@adass2022.ca", proposal.username);
+        user.personalDetails.address = proposal.speaker.email;
+        user.getIdentities().add(new HttpPrincipal(proposal.username));
+        user.getIdentities().add(new X500Principal(distinguishedName));
+
+        return new UserRequest(user, proposal.password.toCharArray());
     }
 
     protected Group createAdassUserGroup(User user) {
@@ -543,7 +540,7 @@ public class ImportUsers extends AbstractCommand {
         return vaultGroup;
     }
 
-    protected String createVaultFolder(User user, Group adassUserGroup, SubmissionType type) {
+    protected String createVaultFolder(User user, Group adassUserGroup) {
         if (this.dryRun) {
             return "ivo:dryrun";
         }
@@ -557,7 +554,7 @@ public class ImportUsers extends AbstractCommand {
             List<NodeProperty> nodeProperties = new ArrayList<>();
             setPermissions(nodeProperties, adassAdminGroup, adassUserGroup);
 
-            String folderUri = String.format("%s/%s/%s", vaultAdassUri, type.name(), folderName);
+            String folderUri = String.format("%s/%s", vaultAdassUri, folderName);
             VOSURI folderURI;
             try {
                 folderURI = new VOSURI(new URI(folderUri));
@@ -572,9 +569,8 @@ public class ImportUsers extends AbstractCommand {
             } catch (NodeNotFoundException e) {
                 this.voSpaceClient.createNode(newNode);
             }
-            return String.format("%s/%s/%s", vaultAdassUrl, type.name(), folderName);
+            return String.format("%s/%s", vaultAdassUrl, folderName);
         });
-        logMessage(String.format("Created vault folder: %s", folderUrl));
         return folderUrl;
     }
 
