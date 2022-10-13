@@ -114,10 +114,19 @@ public class CSVUsers extends AbstractCommand {
         }
         logMessage(String.format("number of proposals - %s", proposals.size()));
 
+        if (!this.dryRun) {
+            try {
+                this.csvWriter.write("paper_id,name,affiliation,title,abstract,email");
+                this.csvWriter.newLine();
+                this.csvWriter.flush();
+            } catch (IOException ignore) {
+            }
+        }
+
         List<Proposal> toSend = new ArrayList<>();
         for (Proposal proposal : proposals) {
             if (this.dryRun) {
-                logMessage(String.format("proposal - %s", proposal.code));
+                logMessage(String.format("proposal - %s", proposal.username));
             } else {
                 writeProposal(proposal);
             }
@@ -134,12 +143,12 @@ public class CSVUsers extends AbstractCommand {
     private void writeProposal(Proposal proposal) {
         // paper_id(username),name,institute,title,"abstract"
         StringBuilder sb = new StringBuilder();
-        sb.append("paper_id,name,answer,title,abstract\r\n");
         sb.append(proposal.username).append(",");
         sb.append(proposal.speaker.name).append(",");
         sb.append(",");
         sb.append("\"").append(proposal.title).append("\",");
-        sb.append("\"").append(proposal.summary.replace("\"", "\"\"")).append("\"");
+        sb.append("\"").append(proposal.summary.replace("\"", "\"\"")).append("\"").append(",");
+        sb.append(proposal.speaker.email);
         try {
             this.csvWriter.write(sb.toString());
             this.csvWriter.newLine();
