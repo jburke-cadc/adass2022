@@ -97,6 +97,7 @@ public class EmailUsers extends AbstractCommand {
         Stream.of(Mailer.SMTP_HOST, Mailer.SMTP_PORT).collect(Collectors.toList());
 
     private final String propertiesFile;
+    private final String emailPropertiesFile;
     private final String logFile;
     private final boolean dryRun;
     private PropertyResourceBundle smtpProps;
@@ -109,9 +110,10 @@ public class EmailUsers extends AbstractCommand {
     private int skipped;
     private int error;
 
-    public EmailUsers(String propertiesFile, String logFile, boolean dryRun)
+    public EmailUsers(String propertiesFile, String emailPropertiesFile, String logFile, boolean dryRun)
         throws UsageException {
         this.propertiesFile = propertiesFile;
+        this.emailPropertiesFile = emailPropertiesFile;
         this.logFile = logFile;
         this.dryRun = dryRun;
         init();
@@ -131,6 +133,7 @@ public class EmailUsers extends AbstractCommand {
         List<Proposal> proposals;
         try {
             proposals = AdminUtil.getProposals(this.connection);
+            //proposals = AdminUtil.getTestProposals();
         } catch (SQLException e) {
             throw new RuntimeException(String.format("Error getting Proposal list from DB: %s", e.getMessage()));
         }
@@ -150,8 +153,9 @@ public class EmailUsers extends AbstractCommand {
         }
 
         for (Proposal proposal : toSend) {
-            String body = String.format(this.body, proposal.speaker.name, proposal.title, proposal.code,
-                                        proposal.password, proposal.folderUrl);
+            // order: name, type, title, PID/username, password, folderUrl
+            String body = String.format(this.body, proposal.speaker.name, proposal.type.getValue(), proposal.title,
+                                        proposal.username, proposal.password, proposal.folderUrl);
 
             if (this.dryRun) {
                 logMessage(String.format("%s - %s - email to send", proposal.code, proposal.speaker.email));
@@ -164,6 +168,11 @@ public class EmailUsers extends AbstractCommand {
                 } catch (MessagingException e) {
                     logMessage(String.format("%s - error sending: %s", proposal.code, e.getMessage()));
                     this.error++;
+                }
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Thread sleep interrupted", e);
                 }
             }
         }
@@ -185,8 +194,8 @@ public class EmailUsers extends AbstractCommand {
         this.sent = 0;
         this.skipped = 0;
         this.error = 0;
-        this.smtpProps = AdminUtil.getProperties(propertiesFile, SMTP_PROPS);
-        this.mailProps = AdminUtil.getProperties(propertiesFile, MAIL_PROPS);
+        this.smtpProps = AdminUtil.getProperties(emailPropertiesFile, SMTP_PROPS);
+        this.mailProps = AdminUtil.getProperties(emailPropertiesFile, MAIL_PROPS);
         this.logWriter = AdminUtil.initWriter(logFile);
         this.body = mailProps.getString(Mailer.MAIL_BODY);
         this.connection = initDatabase(this.propertiesFile);

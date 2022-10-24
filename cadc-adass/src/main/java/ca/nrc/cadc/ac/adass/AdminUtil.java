@@ -70,7 +70,6 @@
 package ca.nrc.cadc.ac.adass;
 
 import ca.nrc.cadc.util.StringUtil;
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -80,18 +79,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PropertyResourceBundle;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class AdminUtil {
 
@@ -164,6 +157,41 @@ public class AdminUtil {
                                            new Speaker(speaker_code, speaker_name, speaker_email)));
             }
         }
+        return proposals;
+    }
+
+    public static List<Proposal> getTestProposals()
+        throws SQLException {
+        List<Proposal> proposals = new ArrayList<>();
+
+        String code = "code";
+        String type = "type";
+        String state = "state";
+        String title = "title";
+        String summary = "abstract";
+        String speaker_code = "speaker-code";
+        String speaker_name = "speaker-name";
+        String speaker_email = "speaker-email";
+        String username = "username";
+        String password = "password";
+        String folderUrl = "folder-url";
+        proposals.add(new Proposal(code, state, type, title, summary, username, password, folderUrl,
+                                   new Speaker(speaker_code, speaker_name, speaker_email)));
+
+        code = "code";
+        type = "type";
+        state = "state";
+        title = "title";
+        summary = "abstract";
+        speaker_code = "speaker-code";
+        speaker_name = "speaker-name";
+        speaker_email = "speaker-email";
+        username = "username";
+        password = "password";
+        folderUrl = "folder-url";
+        proposals.add(new Proposal(code, state, type, title, summary, username, password, folderUrl,
+                                   new Speaker(speaker_code, speaker_name, speaker_email)));
+
         return proposals;
     }
 

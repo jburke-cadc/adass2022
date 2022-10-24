@@ -241,6 +241,13 @@ public class CmdLineParser {
                 sb.append("\nParameter 'propertiesFile' has no value");
             }
 
+            String emailPropertiesFile = am.getValue("emailPropertiesFile");
+            if (emailPropertiesFile == null) {
+                sb.append("\nMissing parameter 'emailPropertiesFile'");
+            } else if (emailPropertiesFile.equals("true")) {
+                sb.append("\nParameter 'emailPropertiesFile' has no value");
+            }
+
             String logFile = am.getValue("logFile");
             if (logFile == null) {
                 sb.append("\nMissing parameter 'logFile'");
@@ -254,7 +261,7 @@ public class CmdLineParser {
 
             boolean dryRun = am.getValue("dry-run") != null;
             boolean altDryRun = am.getValue("dryrun") != null;
-            this.command = new EmailUsers(propertiesFile, logFile, dryRun || altDryRun);
+            this.command = new EmailUsers(propertiesFile, emailPropertiesFile, logFile, dryRun || altDryRun);
             count++;
         }
 
@@ -364,25 +371,25 @@ public class CmdLineParser {
         sb.append("    --logFile=<logging-info>                   : Logging file\n");
         sb.append("\n");
         sb.append("--csv-of-users                                 : Create a CSV file all users\n");
-        sb.append("    --propertiesFile=<email-properties-file>   : Config file with email details\n");
+        sb.append("    --propertiesFile=<properties-file>         : Configuration file\n");
         sb.append("    --csvFile=<users-csv-file>                 : Output CSV file\n");
         sb.append("    --logFile=<logging-info>                   : Sent email addresses\n");
         sb.append("    [--dry-run]                                : Do not send email but log actions\n");
         sb.append("\n");
         sb.append("--email-users                                  : Send an email all users\n");
-        sb.append("    --propertiesFile=<email-properties-file>   : Config file with email details\n");
+        sb.append("    --propertiesFile=<properties-file>         : Configuration file\n");
+        sb.append("    --emailPropertiesFile=<email-properties>   : Config file with email details\n");
         sb.append("    --logFile=<list-of-successful-sends>       : Sent email addresses\n");
         sb.append("    [--dry-run]                                : Do not send email but log actions\n");
         sb.append("\n");
         sb.append("--delete-users                                 : Delete all user and groups\n");
-        sb.append("    --propertiesFile=<email-properties-file>   : Config file with email details\n");
+        sb.append("    --propertiesFile=<properties-file>         : Configuration file\n");
         sb.append("    --logFile=<list-of-deletions>              : Deleted users and groups\n");
         sb.append("    [--dry-run]                                : Do not delete users but log actions\n");
         sb.append("\n");
         sb.append("--lock-users                                   : Remove access to vault folders\n");
         sb.append("    --cert=<Proxy Cert>                        : Expected to be ADASS admin user\n");
-        sb.append("    --propertiesFile=<import-properties-file>  : Configuration file\n");
-        sb.append("    --inFile=<import-users-outfile>            : Output file from --import-users\n");
+        sb.append("    --propertiesFile=<properties-file>         : Configuration file\n");
         sb.append("    --logFile=<list-of-locked-folders>         : Locked folders\n");
         sb.append("    [--dry-run]                                : Do not lock users but log actions\n");
         sb.append("\n");

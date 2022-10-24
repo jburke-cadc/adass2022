@@ -1,6 +1,6 @@
 CREATE SCHEMA cadcmisc;
 
-DROP TABLE IF EXISTS cadcmisc.proposal;
+DROP TABLE IF EXISTS cadcmisc.adass2022;
 
 CREATE TABLE cadcmisc.adass2022 (
     code character varying(6) NOT NULL PRIMARY KEY,
@@ -15,3 +15,7 @@ CREATE TABLE cadcmisc.adass2022 (
     password character varying(16) NOT NULL,
     folderUrl character varying(256) NOT NULL
 );
+
+grant usage on schema cadcmisc to public;
+
+grant select on all tables in schema cadcmisc to public;
